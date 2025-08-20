@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Pesawat Tempur</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#141b2d; --panel-2:#0f1626; --text:#e6edf3; --muted:#9fb0c3; --acc:#4f8cff; --acc-2:#33d1a0; --danger:#ff5c7c;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0; background:radial-gradient(1200px 800px at 70% -10%, #1f2d54 0%, #0b1020 55%) fixed; color:var(--text); font:500 16px/1.5 system-ui,Segoe UI,Roboto,Arial;
+    }
+    #wrap{position:relative; height:100vh; overflow:hidden;}
+    canvas{display:block; width:100vw; height:100vh;}
+
+    /* HUD */
+    .hud{position:absolute; inset:0; pointer-events:none;}
+    .topbar{position:absolute; top:12px; left:12px; right:12px; display:flex; gap:8px; align-items:center; justify-content:space-between;}
+    .pill{pointer-events:auto; background:rgba(20,27,45,.7); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); border-radius:999px; padding:8px 12px; display:flex; gap:10px; align-items:center; box-shadow:0 6px 18px rgba(0,0,0,.25)}
+    .btn{pointer-events:auto; user-select:none; cursor:pointer; border:1px solid rgba(255,255,255,.1); background:linear-gradient(180deg, #1b2643, #121a2f); color:var(--text); padding:8px 14px; border-radius:12px; font-weight:600; letter-spacing:.2px; transition:transform .08s ease, background .2s ease, border-color .2s ease;}
+    .btn:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.25)}
+    .btn.primary{background:linear-gradient(180deg, #4f8cff, #3b6fe0);}
+    .btn.success{background:linear-gradient(180deg, #33d1a0, #1fb286);}
+    .btn.danger{background:linear-gradient(180deg, #ff5c7c, #e04866);}
+    .hud .stat{display:flex; gap:8px; align-items:center;}
+    .dot{width:8px; height:8px; border-radius:50%; background:var(--acc)}
+    .stat .lbl{color:var(--muted); font-size:13px}
+    .stat .val{font-weight:700}
+
+    /* Center dialogs */
+    .center{position:absolute; inset:0; display:grid; place-items:center;}
+    .card{background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px; width:min(560px, 92vw); box-shadow:0 24px 80px rgba(0,0,0,.5)}
+    .title{font-size:28px; font-weight:800; letter-spacing:.3px;}
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .row + .row{margin-top:14px}
+    .grid{display:grid; gap:10px}
+    .grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .input, select{
+      width:100%; background:#0e1629; color:var(--text); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:10px 12px; outline:none;
+    }
+    table{width:100%; border-collapse:collapse;}
+    th,td{padding:10px 12px; text-align:left; border-bottom:1px dashed rgba(255,255,255,.08)}
+    th{color:var(--muted); font-weight:700; font-size:13px}
+    tr:hover td{background:rgba(255,255,255,.03)}
+
+    .hidden{display:none}
+    .kbd{font:600 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#0e1629; border:1px solid rgba(255,255,255,.15); padding:2px 6px; border-radius:6px}
+    .footer-hint{margin-top:12px; font-size:13px; color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game"></canvas>
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="topbar">
+        <div class="pill">
+          <div class="stat"><span class="dot"></span><span class="lbl">Skor</span><span class="val" id="score">0</span></div>
+          <div class="stat"><span class="dot" style="background:var(--acc-2)"></span><span class="lbl">Nyawa</span><span class="val" id="lives">3</span></div>
+          <div class="stat"><span class="dot" style="background:#ffd166"></span><span class="lbl">Level</span><span class="val" id="level">1</span></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="btnPause">⏸️ Jeda</button>
+          <button class="btn" id="btnSettings">⚙️ Pengaturan</button>
+          <button class="btn" id="btnBoard">🏆 Papan Peringkat</button>
+        </div>
+      </div>
+
+      <!-- Start Screen -->
+      <div class="center" id="startScreen">
+        <div class="card">
+          <div class="title">✈️ Game Pesawat Tempur</div>
+          <p class="muted">Hancurkan musuh, raih skor tertinggi, dan masuk papan peringkat!</p>
+          <div class="grid cols-2">
+            <button class="btn primary" id="btnPlay">Mulai Main</button>
+            <button class="btn" id="btnOpenSettings">Pengaturan</button>
+          </div>
+          <div class="footer-hint">Kontrol: <span class="kbd">WASD</span> / <span class="kbd">⬆⬇⬅➡</span> untuk gerak, <span class="kbd">Spasi</span> menembak, <span class="kbd">P</span> jeda.</div>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div class="center hidden" id="settingsModal">
+        <div class="card">
+          <div class="title">⚙️ Pengaturan</div>
+          <div class="row">
+            <label for="difficulty" class="muted" style="min-width:140px">Tingkat Kesulitan</label>
+            <select id="difficulty">
+              <option value="easy">Mudah</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Sulit</option>
+            </select>
+          </div>
+          <div class="row">
+            <label class="muted" style="min-width:140px">Suara</label>
+            <label><input type="checkbox" id="soundToggle" checked /> Aktif</label>
+          </div>
+          <div class="row">
+            <button class="btn success" id="saveSettings">Simpan</button>
+            <button class="btn" id="closeSettings">Tutup</button>
+          </div>
+          <div class="footer-hint">Pengaturan disimpan di browser (localStorage).</div>
+        </div>
+      </div>
+
+      <!-- Leaderboard Modal -->
+      <div class="center hidden" id="leaderboardModal">
+        <div class="card">
+          <div class="title">🏆 Papan Peringkat</div>
+          <table id="leaderboardTable">
+            <thead><tr><th>Peringkat</th><th>Nama</th><th>Skor</th><th>Tanggal</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="row" style="justify-content:space-between; margin-top:12px">
+            <div class="muted">Maks 10 skor terbaik.</div>
+            <div class="row">
+              <button class="btn danger" id="clearBoard">Bersihkan</button>
+              <button class="btn" id="closeBoard">Tutup</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Over Modal -->
+      <div class="center hidden" id="gameOverModal">
+        <div class="card">
+          <div class="title">💥 Game Over</div>
+          <p>Skor kamu: <b id="finalScore">0</b></p>
+          <div class="row">
+            <input class="input" id="playerName" placeholder="Masukkan nama untuk leaderboard" maxlength="20" />
+          </div>
+          <div class="row">
+            <button class="btn success" id="saveScore">Simpan Skor</button>
+            <button class="btn" id="restart">Main Lagi</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ===== Utility & State =====
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const hudScore = document.getElementById('score');
+    const hudLives = document.getElementById('lives');
+    const hudLevel = document.getElementById('level');
+
+    const startScreen = document.getElementById('startScreen');
+    const settingsModal = document.getElementById('settingsModal');
+    const leaderboardModal = document.getElementById('leaderboardModal');
+    const gameOverModal = document.getElementById('gameOverModal');
+
+    const btnPlay = document.getElementById('btnPlay');
+    const btnOpenSettings = document.getElementById('btnOpenSettings');
+    const btnSettings = document.getElementById('btnSettings');
+    const btnBoard = document.getElementById('btnBoard');
+    const btnPause = document.getElementById('btnPause');
+
+    const difficultySel = document.getElementById('difficulty');
+    const soundToggle = document.getElementById('soundToggle');
+    const saveSettingsBtn = document.getElementById('saveSettings');
+    const closeSettingsBtn = document.getElementById('closeSettings');
+
+    const leaderboardTable = document.querySelector('#leaderboardTable tbody');
+    const clearBoardBtn = document.getElementById('clearBoard');
+    const closeBoardBtn = document.getElementById('closeBoard');
+
+    const finalScoreEl = document.getElementById('finalScore');
+    const playerNameInput = document.getElementById('playerName');
+    const saveScoreBtn = document.getElementById('saveScore');
+    const restartBtn = document.getElementById('restart');
+
+    const STORAGE_KEYS = {
+      settings: 'planeGame.settings.v1',
+      board: 'planeGame.leaderboard.v1'
+    };
+
+    const defaultSettings = { difficulty: 'normal', sound: true };
+    let settings = loadSettings();
+
+    function loadSettings(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEYS.settings);
+        return raw ? JSON.parse(raw) : {...defaultSettings};
+      }catch{ return {...defaultSettings}; }
+    }
+    function saveSettings(){
+      localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
+    }
+
+    // Resize canvas to device pixels
+    function resize(){
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(canvas.clientWidth * dpr);
+      canvas.height = Math.floor(canvas.clientHeight * dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0); // keep drawing in CSS pixels
+    }
+    const ro = new ResizeObserver(resize); ro.observe(document.getElementById('wrap'));
+
+    // ===== Game Objects =====
+    const keys = new Set();
+    window.addEventListener('keydown', (e)=>{ if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ' ,'w','a','s','d','W','A','S','D','p','P'].includes(e.key)) e.preventDefault(); keys.add(e.key); });
+    window.addEventListener('keyup', (e)=>{ keys.delete(e.key); });
+
+    const rand = (min,max)=> Math.random()*(max-min)+min;
+
+    let gameState = 'menu'; // menu | playing | paused | over
+    let score = 0, lives = 3, level = 1, time = 0;
+
+    const player = { x: 200, y: 500, w: 36, h: 40, speed: 5, cooldown: 0 };
+    const bullets = []; // {x,y,w,h,vy}
+    const enemies = []; // {x,y,w,h,vx,vy,hp}
+    const particles = []; // explosion particles
+
+    function resetGame(){
+      score = 0; lives = 3; level = 1; time = 0; bullets.length=0; enemies.length=0; particles.length=0; player.x = canvas.clientWidth/2 - player.w/2; player.y = canvas.clientHeight-100; player.cooldown=0;
+      updateHUD();
+    }
+
+    function difficultyParams(){
+      const map = {
+        easy:   { spawn: 0.015, enemySpeed: [1.4,2.6], shootDelay: 200 },
+        normal: { spawn: 0.022, enemySpeed: [1.8,3.2], shootDelay: 160 },
+        hard:   { spawn: 0.03,  enemySpeed: [2.2,3.8], shootDelay: 120 }
+      };
+      // Scale with level a bit
+      const base = map[settings.difficulty] || map.normal;
+      const scale = 1 + (level-1)*0.08;
+      return { spawn: base.spawn*scale, enemySpeed: [base.enemySpeed[0]*scale, base.enemySpeed[1]*scale], shootDelay: base.shootDelay/scale };
+    }
+
+    function updateHUD(){
+      hudScore.textContent = score;
+      hudLives.textContent = lives;
+      hudLevel.textContent = level;
+    }
+
+    // ===== Drawing helpers =====
+    function drawShip(x,y,w,h){
+      ctx.save();
+      ctx.translate(x+w/2,y+h/2);
+      // body
+      ctx.fillStyle = '#7cc6ff';
+      ctx.beginPath();
+      ctx.moveTo(0,-h/2);
+      ctx.lineTo(w/2, h/2-6);
+      ctx.lineTo(0, h/2);
+      ctx.lineTo(-w/2, h/2-6);
+      ctx.closePath();
+      ctx.fill();
+      // cockpit
+      ctx.fillStyle = '#c7f0ff';
+      ctx.fillRect(-6,-h/2+8,12,10);
+      // wings accent
+      ctx.fillStyle = '#3b6fe0';
+      ctx.fillRect(-w/2+2,h/2-12, w-4, 6);
+      ctx.restore();
+    }
+
+    function drawEnemy(x,y,w,h){
+      ctx.save();
+      ctx.translate(x+w/2,y+h/2);
+      ctx.fillStyle = '#ff8fa3';
+      ctx.beginPath();
+      ctx.moveTo(0,-h/2);
+      ctx.lineTo(w/2, h/2);
+      ctx.lineTo(-w/2, h/2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#e04866';
+      ctx.fillRect(-w/2+2,h/2-8, w-4, 6);
+      ctx.restore();
+    }
+
+    function spawnEnemy(){
+      const w = rand(26, 40), h = w*1.1;
+      enemies.push({ x: rand(0, canvas.clientWidth-w), y: -h, w, h, vx: rand(-0.6,0.6), vy: rand(...difficultyParams().enemySpeed), hp: 1 });
+    }
+
+    function shoot(){
+      const now = performance.now();
+      if(now - player.cooldown < difficultyParams().shootDelay) return;
+      player.cooldown = now;
+      bullets.push({ x: player.x + player.w/2 - 2, y: player.y - 10, w: 4, h: 10, vy: -8 });
+      if(settings.sound){
+        // tiny click using WebAudio
+        try{
+          const actx = new (window.AudioContext||window.webkitAudioContext)();
+          const o = actx.createOscillator();
+          const g = actx.createGain();
+          o.type='square'; o.frequency.value=880; g.gain.value=.02; o.connect(g); g.connect(actx.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+0.06); o.stop(actx.currentTime+0.06);
+        }catch{}
+      }
+    }
+
+    function explode(x,y){
+      for(let i=0;i<14;i++){
+        particles.push({x,y, vx:rand(-2.2,2.2), vy:rand(-2.2,1.2), life: rand(18,32)});
+      }
+      if(settings.sound){
+        try{
+          const actx = new (window.AudioContext||window.webkitAudioContext)();
+          const o = actx.createOscillator(); const g = actx.createGain();
+          o.type='triangle'; o.frequency.value=120; g.gain.value=.05; o.connect(g); g.connect(actx.destination);
+          o.start(); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+0.2); o.stop(actx.currentTime+0.22);
+        }catch{}
+      }
+    }
+
+    function rectsOverlap(a,b){
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function update(){
+      if(gameState !== 'playing') return;
+      time += 1;
+      const width = canvas.clientWidth, height = canvas.clientHeight;
+
+      // Move player
+      const speed = player.speed;
+      if(keys.has('ArrowLeft')||keys.has('a')||keys.has('A')) player.x -= speed;
+      if(keys.has('ArrowRight')||keys.has('d')||keys.has('D')) player.x += speed;
+      if(keys.has('ArrowUp')||keys.has('w')||keys.has('W')) player.y -= speed;
+      if(keys.has('ArrowDown')||keys.has('s')||keys.has('S')) player.y += speed;
+      player.x = Math.max(0, Math.min(width - player.w, player.x));
+      player.y = Math.max(0, Math.min(height - player.h, player.y));
+
+      // Shoot
+      if(keys.has(' ')) shoot();
+
+      // Spawn enemies
+      if(Math.random() < difficultyParams().spawn) spawnEnemy();
+
+      // Update bullets
+      for(let i=bullets.length-1;i>=0;i--){
+        const b = bullets[i]; b.y += b.vy; if(b.y + b.h < 0){ bullets.splice(i,1); continue; }
+      }
+
+      // Update enemies
+      for(let i=enemies.length-1;i>=0;i--){
+        const e = enemies[i]; e.x += e.vx; e.y += e.vy;
+        if(e.x<0||e.x+e.w>width) e.vx *= -1;
+        if(e.y > height){ enemies.splice(i,1); loseLife(); continue; }
+      }
+
+      // Collisions
+      for(let i=enemies.length-1;i>=0;i--){
+        const e = enemies[i];
+        if(rectsOverlap({x:player.x,y:player.y,w:player.w,h:player.h}, e)){
+          enemies.splice(i,1); explode(e.x+e.w/2, e.y+e.h/2); loseLife(); continue;
+        }
+        for(let j=bullets.length-1;j>=0;j--){
+          const b = bullets[j];
+          if(rectsOverlap({x:b.x,y:b.y,w:b.w,h:b.h}, e)){
+            bullets.splice(j,1); enemies.splice(i,1); explode(e.x+e.w/2, e.y+e.h/2); score += 10; if(score % 120 === 0) level++; updateHUD(); break;
+          }
+        }
+      }
+
+      // Particles
+      for(let i=particles.length-1;i>=0;i--){
+        const p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.life -= 1; if(p.life<=0) particles.splice(i,1);
+      }
+    }
+
+    function loseLife(){
+      lives--; updateHUD(); if(lives<=0){ endGame(); }
+    }
+
+    function drawBackground(){
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      // starfield
+      ctx.fillStyle = 'rgba(255,255,255,.9)';
+      for(let i=0;i<2;i++){
+        const y = (time* (0.8+i*0.5)) % h;
+        for(let x=0;x<w;x+=32){ ctx.fillRect((x + (i*13))%w, y, 2, 2); }
+      }
+    }
+
+    function render(){
+      ctx.clearRect(0,0,canvas.clientWidth, canvas.clientHeight);
+      drawBackground();
+      // Draw entities
+      drawShip(player.x, player.y, player.w, player.h);
+      ctx.fillStyle = '#b9e6ff'; // bullets
+      bullets.forEach(b=> ctx.fillRect(b.x, b.y, b.w, b.h));
+      enemies.forEach(e=> drawEnemy(e.x, e.y, e.w, e.h));
+      // particles
+      ctx.fillStyle = '#ffd166';
+      particles.forEach(p=> ctx.fillRect(p.x, p.y, 3, 3));
+    }
+
+    function loop(){
+      if(gameState==='playing') update();
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    // ===== Leaderboard =====
+    function getBoard(){
+      try{ return JSON.parse(localStorage.getItem(STORAGE_KEYS.board)||'[]'); }catch{ return []; }
+    }
+    function setBoard(arr){
+      localStorage.setItem(STORAGE_KEYS.board, JSON.stringify(arr));
+    }
+    function addScore(name, score){
+      const now = new Date();
+      const item = { name: name||'Player', score, date: now.toISOString() };
+      const arr = getBoard();
+      arr.push(item);
+      arr.sort((a,b)=> b.score - a.score);
+      setBoard(arr.slice(0,10));
+    }
+    function formatDate(iso){
+      try{ const d=new Date(iso); return d.toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});}catch{return ''}
+    }
+    function renderBoard(){
+      const arr = getBoard();
+      leaderboardTable.innerHTML = arr.map((r,i)=>`<tr><td>#${i+1}</td><td>${escapeHtml(r.name)}</td><td>${r.score}</td><td>${formatDate(r.date)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Belum ada skor. Main dulu yuk!</td></tr>';
+    }
+    function escapeHtml(str){
+      return (str||'').replace(/[&<>"]+/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s]));
+    }
+
+    // ===== UI Events =====
+    function openModal(el){ el.classList.remove('hidden'); }
+    function closeModal(el){ el.classList.add('hidden'); }
+
+    btnPlay.onclick = ()=>{ startGame(); };
+    btnOpenSettings.onclick = ()=>{ openSettings(); };
+    btnSettings.onclick = ()=>{ openSettings(); };
+    btnBoard.onclick = ()=>{ openBoard(); };
+
+    btnPause.onclick = ()=>{ togglePause(); };
+    document.addEventListener('keydown', (e)=>{ if(e.key==='p' || e.key==='P') togglePause(); });
+
+    saveSettingsBtn.onclick = ()=>{
+      settings = { difficulty: difficultySel.value, sound: soundToggle.checked };
+      saveSettings(); closeModal(settingsModal);
+    };
+    closeSettingsBtn.onclick = ()=> closeModal(settingsModal);
+
+    clearBoardBtn.onclick = ()=>{ if(confirm('Hapus semua skor di papan peringkat?')){ setBoard([]); renderBoard(); }};
+    closeBoardBtn.onclick = ()=> closeModal(leaderboardModal);
+
+    saveScoreBtn.onclick = ()=>{
+      const name = playerNameInput.value.trim().slice(0,20);
+      addScore(name, score); playerNameInput.value=''; closeModal(gameOverModal); openBoard();
+    };
+    restartBtn.onclick = ()=>{ closeModal(gameOverModal); startGame(); };
+
+    function openSettings(){
+      difficultySel.value = settings.difficulty; soundToggle.checked = !!settings.sound; openModal(settingsModal);
+    }
+    function openBoard(){ renderBoard(); openModal(leaderboardModal); }
+
+    function togglePause(){
+      if(gameState==='playing'){ gameState='paused'; btnPause.textContent='▶️ Lanjut'; }
+      else if(gameState==='paused'){ gameState='playing'; btnPause.textContent='⏸️ Jeda'; }
+    }
+
+    function startGame(){
+      closeModal(startScreen); closeModal(leaderboardModal); closeModal(settingsModal); closeModal(gameOverModal);
+      settings = loadSettings(); // ensure latest
+      resetGame(); gameState='playing'; btnPause.textContent='⏸️ Jeda';
+    }
+    function endGame(){
+      gameState='over'; finalScoreEl.textContent = score; openModal(gameOverModal);
+    }
+
+    // start in menu
+    function init(){
+      resize();
+      openModal(startScreen);
+      loop();
+    }
+    init();
+  </script>
+</body>
+</html>
