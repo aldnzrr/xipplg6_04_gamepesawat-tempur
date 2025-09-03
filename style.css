@@ -1,0 +1,87 @@
+    :root{
+      --bg:#0b1020; --panel:#141b2d; --panel-2:#0f1626; --text:#e6edf3; --muted:#9fb0c3; --acc:#4f8cff; --acc-2:#33d1a0; --danger:#ff5c7c;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+body{
+  margin:0; 
+  background: #0b1020; /* Ubah ke warna solid yang gelap */
+  color:var(--text); 
+  font:500 16px/1.5 system-ui,Segoe UI,Roboto,Arial;
+  /* Tambahkan efek bintang sebagai latar belakang */
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 60px 10px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 150px 100px, #fff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 200px 200px; /* Ukuran pola bintang */
+}
+    #wrap{position:relative; height:100vh; overflow:hidden;}
+    canvas{display:block; width:100vw; height:100vh;}
+
+    /* HUD */
+    .hud{position:absolute; inset:0; pointer-events:nothing;}
+    .topbar{position:absolute; top:12px; left:12px; right:12px; display:flex; gap:8px; align-items:center; justify-content:space-between;}
+    .pill{pointer-events:auto; background:rgba(20,27,45,.7); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); border-radius:999px; padding:8px 12px; display:flex; gap:10px; align-items:center; box-shadow:0 6px 18px rgba(0,0,0,.25)}
+    .btn{pointer-events:auto; user-select:none; cursor:pointer; border:1px solid rgba(255,255,255,.1); background:linear-gradient(180deg, #1b2643, #121a2f); color:var(--text); padding:8px 14px; border-radius:12px; font-weight:600; letter-spacing:.2px; transition:transform .08s ease, background .2s ease, border-color .2s ease;}
+    .btn:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.25)}
+    .btn.primary{background:linear-gradient(180deg, #4f8cff, #3b6fe0);}
+    .btn.success{background:linear-gradient(180deg, #33d1a0, #1fb286);}
+    .btn.danger{background:linear-gradient(180deg, #ff5c7c, #e04866);}
+    .hud .stat{display:flex; gap:8px; align-items:center;}
+    .dot{width:8px; height:8px; border-radius:50%; background:var(--acc)}
+    .stat .lbl{color:var(--muted); font-size:13px}
+    .stat .val{font-weight:700}
+
+    /* Center dialogs */
+    .center{position:absolute; inset:0; display:grid; place-items:center;}
+    .card{background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px; width:min(560px, 92vw); box-shadow:0 24px 80px rgba(0,0,0,.5); text-align: center; /* Tambahkan ini untuk menengahkan teks */}
+    .title{font-size:28px; font-weight:800; letter-spacing:.3px; margin-bottom: 20px;} /* Tambahkan margin bawah */
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content: center; /* Tambahkan ini untuk menengahkan tombol */}
+    .row + .row{margin-top:14px}
+    .grid{
+      display:grid;
+      gap: 16px; /* Perbesar jarak antar item (tombol) dalam grid */
+      grid-template-columns: 1fr;
+      max-width: 220px; /* Lebarkan sedikit */
+      margin: 24px auto; /* Tambahkan margin vertikal untuk memisahkan dari judul dan teks di bawahnya */
+    }
+    .input, select{
+      width:100%; background:#0e1629; color:var(--text); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:10px 12px; outline:none;
+      margin-bottom: 12px; /* Tambahkan jarak bawah */
+    }
+    table{width:100%; border-collapse:collapse;}
+    th,td{padding:10px 12px; text-align:left; border-bottom:1px dashed rgba(255,255,255,.08)}
+    th{color:var(--muted); font-weight:700; font-size:13px}
+    tr:hover td{background:rgba(255,255,255,.03)}
+
+    .hidden{display:none}
+    .kbd{font:600 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#0e1629; border:1px solid rgba(255,255,255,.15); padding:2px 6px; border-radius:6px}
+    .footer-hint{margin-top:20px; font-size:13px; color:var(--muted); line-height: 1.6;} /* Tambahkan jarak atas dan tinggi garis */
+
+    /* Tambahan untuk memperbaiki jarak elemen */
+    .card > p {
+      margin: 16px 0; /* Jarak untuk paragraf dalam card */
+    }
+    
+    .card ul {
+      margin: 18px 0; /* Jarak untuk list dalam card */
+      padding-left: 24px; /* Tambahkan padding kiri untuk list */
+    }
+    
+    .card ul li {
+      margin: 10px 0; /* Jarak antar item list */
+      padding-left: 8px; /* Tambahkan padding kiri untuk item list */
+    }
+    
+    /* Perbaikan jarak untuk modal papan peringkat */
+    #leaderboardTable {
+      margin: 18px 0; /* Jarak atas dan bawah untuk tabel */
+    }
+    
+    /* Perbaikan jarak untuk input nama pemain */
+    #playerName {
+      margin: 16px 0; /* Jarak atas dan bawah untuk input */
+    }
