@@ -7,10 +7,20 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="background-image">
-    <img src="" alt="">
-    <img src="" alt="">
-  </div>
+<audio id="backgroundMusic" loop autoplay>
+  <source src="/asset/Music for games.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+<audio id="loseMusic">
+  <source src="asset/preview (1) [music].mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+<audio id="enemyDestroySound">
+  <source src="asset/preview_[cut_1sec] (2).mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+
   <div id="wrap">
     <canvas id="game"></canvas>
 
@@ -72,7 +82,7 @@
           <div class="row" style="justify-content:space-between; margin-top:20px">
             <div class="muted">Maks 10 skor terbaik.</div>
             <div class="row">
-              <button class="btn danger" id="clearBoard">Bersihkan</button>
+              <!-- Tombol Bersihkan dihapus dari sini -->
               <button class="btn" id="closeBoard">Tutup</button>
             </div>
           </div>
@@ -98,9 +108,7 @@
           <div class="title">🎯 Misi</div>
           <p class="muted">Selesaikan misi untuk mendapatkan bonus!</p>
           <ul style="list-style: none; padding: 0; text-align: left; margin: 20px 0;">
-            <li>✅ Hancurkan 50 musuh</li>
-            <li>⏳ Capai skor 500</li>
-            <li>⏳ Bertahan 2 menit</li>
+            <li>Misi Kalian Bertahan Selama Mungkin Dan jadi orang yang pertama dengan memiliki skor yang tinggi</li>
           </ul>
           <div class="row">
             <button class="btn" id="closeMissions">Tutup</button>
